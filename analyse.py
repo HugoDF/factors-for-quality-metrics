@@ -5,11 +5,11 @@ from numpy import corrcoef
 cnx = mysql.connector.connect(user='root', password='',
                               host='localhost',
                               database= 'travistorrent')
- 
+
 def plot(xs, ys):
     plt.plot(xs,ys)
     plt.show()
-    
+
 def extractVars(data):
     xs = []
     ys = []
@@ -18,10 +18,10 @@ def extractVars(data):
         xs.append(x)
         ys.append(y)
     return xs, ys
-    
+
 def runQuery(cnx, query):
     cursor = cnx.cursor()
-    cursor.execute(query)        
+    cursor.execute(query)
     data = cursor.fetchall()
     return data
 
@@ -34,33 +34,35 @@ def getColumns(cnx):
 
 def getFrequencyOfTeamSizes(cnx):
     query = """
-        SELECT 
+        SELECT
             gh_team_size,
             COUNT(gh_team_size)
         FROM travistorrent_27_10_2016
+        WHERE gh_team_size != 0
         GROUP BY gh_team_size
         """
     data = runQuery(cnx, query)
-    
+
     totalNumberOfTeams = 0
     for entry in data:
         size, number = entry
         totalNumberOfTeams += number
-        
+
     teamSizeToFrequency = {}
-    
+
     for entry in data:
         size, number = entry
         teamSizeToFrequency.update({ size: float(number)/float(totalNumberOfTeams) })
-    
+
     return teamSizeToFrequency
 
 def getTeamSizeVsAvgTestsFail(cnx):
     query = """
-        SELECT 
+        SELECT
             gh_team_size,
             AVG(tr_tests_failed)
         FROM travistorrent_27_10_2016
+        WHERE gh_team_size != 0
         GROUP BY gh_team_size
         """
     data = runQuery(cnx, query)
@@ -72,17 +74,18 @@ def getTeamSizeVsAvgTestsFail(cnx):
 
 def getTeamSizeVsAvgTests(cnx, weightedByTeamSizeFrequency = True):
     teamSizeToFrequency = getFrequencyOfTeamSizes(cnx)
-    
+
     query = """
-        SELECT 
+        SELECT
             gh_team_size,
             AVG(gh_test_lines_per_kloc)
         FROM travistorrent_27_10_2016
+        WHERE gh_team_size != 0
         GROUP BY gh_team_size
         """
 
     data = runQuery(cnx, query)
-    
+
     xs = []
     ys = []
 
@@ -94,11 +97,11 @@ def getTeamSizeVsAvgTests(cnx, weightedByTeamSizeFrequency = True):
             ys.append(weightedTestLines)
         else:
             ys.append(testLines)
-    
+
 
     print corrcoef(xs, ys)
     plot(xs, ys)
-    
+
 
 
 # getColumns(cnx)
