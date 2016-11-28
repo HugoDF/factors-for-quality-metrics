@@ -46,13 +46,13 @@ def getFrequencyOfTeamSizes(cnx):
     totalNumberOfTeams = 0
     for entry in data:
         size, number = entry
-        totalNumberOfTeams += number
+        totalNumberOfTeams += (number * size)
 
     teamSizeToFrequency = {}
 
     for entry in data:
         size, number = entry
-        teamSizeToFrequency.update({ size: float(number)/float(totalNumberOfTeams) })
+        teamSizeToFrequency.update({ size: (float(number)*float(size))/float(totalNumberOfTeams) })
 
     return teamSizeToFrequency
 
@@ -70,7 +70,6 @@ def getTeamSizeVsAvgTestsFail(cnx):
     print corrcoef(xs, ys)
     plot(xs, ys)
     # there is a strong correlation between team size and the proportion of test fails
-
 
 def getTeamSizeVsAvgTests(cnx, weightedByTeamSizeFrequency = True):
     teamSizeToFrequency = getFrequencyOfTeamSizes(cnx)
@@ -102,8 +101,23 @@ def getTeamSizeVsAvgTests(cnx, weightedByTeamSizeFrequency = True):
     print corrcoef(xs, ys)
     plot(xs, ys)
 
+def getPrCommentsVsAvgTestsFail(cnx):
+    query = """
+        SELECT
+            gh_num_pr_comments,
+            AVG(tr_tests_failed)
+        FROM travistorrent_27_10_2016
+        WHERE gh_num_pr_comments != 0
+        GROUP BY gh_num_pr_comments
+        """
+    data = runQuery(cnx, query)
+    xs, ys = extractVars(data)
+    print corrcoef(xs, ys)
+    plot(xs, ys)
+
 
 
 # getColumns(cnx)
-getTeamSizeVsAvgTestsFail(cnx)
-# getTeamSizeVsAvgTests(cnx, True)
+# getTeamSizeVsAvgTestsFail(cnx)
+getTeamSizeVsAvgTests(cnx, True)
+# getPrCommentsVsAvgTestsFail(cnx)
