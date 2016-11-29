@@ -5,10 +5,16 @@ from numpy import corrcoef
 cnx = mysql.connector.connect(user='root', password='',
                               host='localhost',
                               database= 'travistorrent')
+plotEnabled = False
+corrEnabled = True
 
 def plot(xs, ys):
-    plt.plot(xs,ys)
-    plt.show()
+    if(plotEnabled):
+        plt.plot(xs,ys)
+        plt.show()
+def corr(xs, ys):
+    if(corrEnabled):
+        print corrcoef(xs, ys)[0][1]
 
 def extractVars(data):
     xs = []
@@ -56,68 +62,27 @@ def getFrequencyOfTeamSizes(cnx):
 
     return teamSizeToFrequency
 
-def getTeamSizeVsAvgTestsFail(cnx):
-    query = """
-        SELECT
-            gh_team_size,
-            AVG(tr_tests_failed)
-        FROM travistorrent_27_10_2016
-        WHERE gh_team_size != 0
-        GROUP BY gh_team_size
-        """
-    data = runQuery(cnx, query)
-    xs, ys = extractVars(data)
-    print corrcoef(xs, ys)
-    plot(xs, ys)
-    # there is a strong correlation between team size and the proportion of test fails
 
-def getTeamSizeVsAvgTests(cnx, weightedByTeamSizeFrequency = True):
-    teamSizeToFrequency = getFrequencyOfTeamSizes(cnx)
-
-    query = """
-        SELECT
-            gh_team_size,
-            AVG(gh_test_lines_per_kloc)
-        FROM travistorrent_27_10_2016
-        WHERE gh_team_size != 0
-        GROUP BY gh_team_size
-        """
+def compareFields(cnx, firstField, secondField):
+    query = "SELECT " + firstField + ", " + secondField + " " + \
+            "FROM travistorrent_27_10_2016 " + \
+            "GROUP BY " + firstField
 
     data = runQuery(cnx, query)
+    xs, rawY = extractVars(data)
+    ys = map(float, rawY)
 
-    xs = []
-    ys = []
+    print firstField, "vs", secondField
 
-    for entry in data:
-        teamSize, testLines = entry
-        weightedTestLines = testLines * teamSizeToFrequency.get(teamSize)
-        xs.append(teamSize)
-        if(weightedByTeamSizeFrequency):
-            ys.append(weightedTestLines)
-        else:
-            ys.append(testLines)
-
-
-    print corrcoef(xs, ys)
+    corr(xs, ys)
     plot(xs, ys)
-
-def getPrCommentsVsAvgTestsFail(cnx):
-    query = """
-        SELECT
-            gh_num_pr_comments,
-            AVG(tr_tests_failed)
-        FROM travistorrent_27_10_2016
-        WHERE gh_num_pr_comments != 0
-        GROUP BY gh_num_pr_comments
-        """
-    data = runQuery(cnx, query)
-    xs, ys = extractVars(data)
-    print corrcoef(xs, ys)
-    plot(xs, ys)
-
 
 
 # getColumns(cnx)
-# getTeamSizeVsAvgTestsFail(cnx)
-getTeamSizeVsAvgTests(cnx, True)
-# getPrCommentsVsAvgTestsFail(cnx)
+compareFields(cnx, "gh_team_size", "AVG(tr_tests_failed)")
+compareFields(cnx, "gh_team_size", "AVG(gh_test_churn)")
+compareFields(cnx, "gh_num_pr_comments", "AVG(tr_tests_failed)")
+compareFields(cnx, "gh_num_pr_comments", "AVG(gh_test_churn)")
+compareFields(cnx, "gh_test_churn", "AVG(tr_tests_failed)")
+compareFields(cnx, "gh_num_issue_comments", "AVG(gh_num_pr_comments)")
+compareFields(cnx, "gh_num_pr_comments", "AVG(gh_num_issue_comments)")
