@@ -5,7 +5,7 @@ from numpy import corrcoef
 cnx = mysql.connector.connect(user='root', password='',
                               host='localhost',
                               database= 'travistorrent')
-plotEnabled = False
+plotEnabled = True
 corrEnabled = True
 
 def plot(xs, ys):
@@ -80,9 +80,13 @@ def compareFields(cnx, firstField, secondField):
 
 # getColumns(cnx)
 compareFields(cnx, "gh_team_size", "AVG(tr_tests_failed)")
+compareFields(cnx, "gh_team_size", "AVG(tr_tests_failed) / COUNT(row)")
 compareFields(cnx, "gh_team_size", "AVG(gh_test_churn)")
 compareFields(cnx, "gh_num_pr_comments", "AVG(tr_tests_failed)")
 compareFields(cnx, "gh_num_pr_comments", "AVG(gh_test_churn)")
 compareFields(cnx, "gh_test_churn", "AVG(tr_tests_failed)")
+
 compareFields(cnx, "gh_num_issue_comments", "AVG(gh_num_pr_comments)")
 compareFields(cnx, "gh_num_pr_comments", "AVG(gh_num_issue_comments)")
+compareFields(cnx, "gh_num_issue_comments", "AVG(gh_num_commit_comments)")
+compareFields(cnx, "gh_num_commit_comments", "AVG(gh_num_pr_comments)")
