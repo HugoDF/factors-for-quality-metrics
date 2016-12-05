@@ -2,9 +2,11 @@ import mysql.connector
 import matplotlib.pyplot as plt
 from numpy import corrcoef
 
-cnx = mysql.connector.connect(user='root', password='travisDB45',
+import json
+
+cnx = mysql.connector.connect(user='root', password='',
                               host='localhost',
-                              database= 'travisDB')
+                              database= 'travistorrent')
 plotEnabled = True
 corrEnabled = True
 
@@ -12,7 +14,7 @@ def plot(xs, ys):
     if(plotEnabled):
         plt.plot(xs,ys)
         plt.show()
-        
+
 def corr(xs, ys):
     if(corrEnabled):
         print corrcoef(xs, ys)[0][1]
@@ -78,13 +80,56 @@ def compareFields(cnx, firstField, secondField):
     corr(xs, ys)
     plot(xs, ys)
 
+def getProjectNameToTotalsMap(data):
+    projectNameToTotalsMap = {}
+    for (name, total) in data:
+        projectNameToTotalsMap[name] = total
+
+    return projectNameToTotalsMap
+
+def getProjects(cnx, size):
+    query = "SELECT gh_project_name, COUNT(*) as total  FROM travistorrent_27_10_2016 WHERE gh_team_size = " + str(size) + " GROUP BY gh_project_name"
+    data = runQuery(cnx, query)
+    projectNameToTotalsMap = getProjectNameToTotalsMap(data)
+
+    query = "SELECT gh_project_name, COUNT(*) as fail FROM travistorrent_27_10_2016 WHERE gh_team_size = " + str(size) + " AND tr_status = 'failed' GROUP BY gh_project_name"
+    data = runQuery(cnx, query)
+
+    projects = []
+    for (name, fails) in data:
+        total = projectNameToTotalsMap.get(name)
+        projects.append((name, total, fails))
+
+    return projects
+
+def getTeamSizeToTeamInfoMap(cnx, teamSizes):
+    teamSizeToTeamInfo = {}
+    for size in teamSizes:
+        print size
+        teamSizeToTeamInfo[size] = getProjects(cnx, size)
+    return teamSizeToTeamInfo
+
+def teamSizeToTeamsWithBuildInfo(cnx):
+    query = """SELECT gh_team_size FROM travistorrent_27_10_2016 GROUP BY gh_team_size"""
+    data = runQuery(cnx, query)
+
+    teamSizes = map(lambda x : x[0], data)
+    teamSizeToTeamInfo = getTeamSizeToTeamInfoMap(cnx, teamSizes)
+
+    with open('teamSizes.json', 'w') as outfile:
+        json.dump(teamSizeToTeamInfo, outfile)
+
+    print json.dumps(teamSizeToTeamInfo)
+
+teamSizeToTeamsWithBuildInfo(cnx)
+
 def team_avg_builds(cnx):
     # correlate team size with average number of builds
     builds_query = '''SELECT DISTINCT gh_project_name AS name, fail, total
-                    FROM travistorrent_27_10_2016 
-                    WHERE fail = (SELECT COUNT(*) 
+                    FROM travistorrent_27_10_2016
+                    WHERE fail = (SELECT COUNT(*)
                                 FROM travistorrent_27_10_2016
-                                WHERE gh_project_name = name AND tr_status = 'failed') 
+                                WHERE gh_project_name = name AND tr_status = 'failed')
                                 AND
                         total = total = (SELECT COUNT(*)
                                 FROM travistorrent_27_10_2016
@@ -95,14 +140,14 @@ def team_avg_builds(cnx):
                     WHERE tr_status != 'errored'
                     AND
                     gh_project_name = 'weppos/whois'"""
-                   
+
     data = runQuery(cnx, query_second)
     team_sizes = []
     no_builds = []
     for row in data:
-        print(row)                               
+        print(row)
     pass
-    
+
 def team_builds(cnx):
     # team size v proportion of build fails
     # total num of builds
@@ -112,7 +157,7 @@ def team_builds(cnx):
             "GROUP BY gh_team_size " + \
             "HAVING COUNT(tr_status) > 0 " + \
             "ORDER BY gh_team_size ASC "
-            
+
     data = runQuery(cnx, builds_query)
     team_sizes_with_builds, total_builds = extractVars(data)
     total_builds = total_builds
@@ -123,7 +168,7 @@ def team_builds(cnx):
             "GROUP BY gh_team_size " + \
             "HAVING COUNT(tr_status) > 0 " + \
             "ORDER BY gh_team_size ASC "
-    
+
     data = runQuery(cnx, fail_query)
     team_sizes_with_fails, build_fails = extractVars(data)
     proportions_of_fails = []
@@ -137,7 +182,7 @@ def team_builds(cnx):
 
     corr(team_sizes_with_fails, proportions_of_fails)
     # plot correlation graph
-    plot(team_sizes_with_fails, proportions_of_fails) 
+    plot(team_sizes_with_fails, proportions_of_fails)
     pass
-    
-team_avg_builds(cnx)
+
+# team_avg_builds(cnx)
