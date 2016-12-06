@@ -41,45 +41,6 @@ def getColumns(cnx):
     for entry in data:
         print entry[0]
 
-def getFrequencyOfTeamSizes(cnx):
-    query = """
-        SELECT
-            gh_team_size,
-            COUNT(gh_team_size)
-        FROM travistorrent_27_10_2016
-        WHERE gh_team_size != 0
-        GROUP BY gh_team_size
-        """
-    data = runQuery(cnx, query)
-
-    totalNumberOfTeams = 0
-    for entry in data:
-        size, number = entry
-        totalNumberOfTeams += (number * size)
-
-    teamSizeToFrequency = {}
-
-    for entry in data:
-        size, number = entry
-        teamSizeToFrequency.update({ size: (float(number)*float(size))/float(totalNumberOfTeams) })
-
-    return teamSizeToFrequency
-
-
-def compareFields(cnx, firstField, secondField):
-    query = "SELECT " + firstField + ", " + secondField + " " + \
-            "FROM travistorrent_27_10_2016 " + \
-            "GROUP BY " + firstField
-
-    data = runQuery(cnx, query)
-    xs, rawY = extractVars(data)
-    ys = map(float, rawY)
-
-    print firstField, "vs", secondField
-
-    corr(xs, ys)
-    plot(xs, ys)
-
 def getProjectNameToTotalsMap(data):
     projectNameToTotalsMap = {}
     for (name, total) in data:
@@ -116,73 +77,41 @@ def teamSizeToTeamsWithBuildInfo(cnx):
     teamSizes = map(lambda x : x[0], data)
     teamSizeToTeamInfo = getTeamSizeToTeamInfoMap(cnx, teamSizes)
 
-    with open('teamSizes.json', 'w') as outfile:
+    with open('./data/buildInfoForTeams.json', 'w') as outfile:
         json.dump(teamSizeToTeamInfo, outfile)
 
     print json.dumps(teamSizeToTeamInfo)
 
-teamSizeToTeamsWithBuildInfo(cnx)
+# teamSizeToTeamsWithBuildInfo(cnx)
 
-def team_avg_builds(cnx):
-    # correlate team size with average number of builds
-    builds_query = '''SELECT DISTINCT gh_project_name AS name, fail, total
-                    FROM travistorrent_27_10_2016
-                    WHERE fail = (SELECT COUNT(*)
-                                FROM travistorrent_27_10_2016
-                                WHERE gh_project_name = name AND tr_status = 'failed')
-                                AND
-                        total = total = (SELECT COUNT(*)
-                                FROM travistorrent_27_10_2016
-                                WHERE tr_status != 'errored')
-                    GROUP BY gh_project_name'''
-    query_second = """SELECT COUNT(*) as total
-                    FROM travistorrent_27_10_2016
-                    WHERE tr_status != 'errored'
-                    AND
-                    gh_project_name = 'weppos/whois'"""
+def getVolumeOfTestForTeams(cnx, teamSizes):
+    volumeOfTestForTeams = {}
+    for size in teamSizes:
+        print size
+        query = """
+            SELECT
+                gh_project_name,
+                AVG(gh_test_cases_per_kloc)
+            FROM travistorrent_27_10_2016
+            WHERE gh_team_size = """ + str(size) + """
+            GROUP BY gh_project_name
+        """
+        data = runQuery(cnx, query)
+        volumeOfTestForTeams[size] = data
 
-    data = runQuery(cnx, query_second)
-    team_sizes = []
-    no_builds = []
-    for row in data:
-        print(row)
-    pass
+    return volumeOfTestForTeams
 
-def team_builds(cnx):
-    # team size v proportion of build fails
-    # total num of builds
-    builds_query = "SELECT DISTINCT gh_team_size, COUNT(tr_status) " + \
-            "FROM travistorrent_27_10_2016 " + \
-            "WHERE tr_status != 'errored' AND gh_team_size > 0 " + \
-            "GROUP BY gh_team_size " + \
-            "HAVING COUNT(tr_status) > 0 " + \
-            "ORDER BY gh_team_size ASC "
+def teamSizeToTeamsWithVolumeOfTest(cnx):
+    query = """ SELECT gh_team_size FROM travistorrent_27_10_2016 GROUP BY gh_team_size"""
+    data = runQuery(cnx, query)
 
-    data = runQuery(cnx, builds_query)
-    team_sizes_with_builds, total_builds = extractVars(data)
-    total_builds = total_builds
-    # total num of build fails, exclude those with no fails
-    fail_query = "SELECT DISTINCT gh_team_size, COUNT(tr_status) " + \
-            "FROM travistorrent_27_10_2016 " + \
-            "WHERE tr_status = 'failed' and gh_team_size > 0 " + \
-            "GROUP BY gh_team_size " + \
-            "HAVING COUNT(tr_status) > 0 " + \
-            "ORDER BY gh_team_size ASC "
+    teamSizes = map(lambda x: x[0], data)
+    teamSizeToTeamsWithVolumeOfTest = getVolumeOfTestForTeams(cnx, teamSizes)
 
-    data = runQuery(cnx, fail_query)
-    team_sizes_with_fails, build_fails = extractVars(data)
-    proportions_of_fails = []
-    no_sizes = len(team_sizes_with_fails)
-    for k in range(0, no_sizes):
-        size = team_sizes_with_fails[k]
-        index = team_sizes_with_builds.index(size)
-        num_fails = float(build_fails[k])
-        num_builds = float(total_builds[index])
-        proportions_of_fails.append(num_fails / num_builds)
+    with open('./data/volumeOfTestForTeams.json', 'w') as outfile:
+        json.dump(teamSizeToTeamsWithVolumeOfTest, outfile)
 
-    corr(team_sizes_with_fails, proportions_of_fails)
-    # plot correlation graph
-    plot(team_sizes_with_fails, proportions_of_fails)
-    pass
+    print json.dumps(teamSizeToTeamsWithVolumeOfTest)
 
-# team_avg_builds(cnx)
+
+teamSizeToTeamsWithVolumeOfTest(cnx)
