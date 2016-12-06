@@ -8,7 +8,7 @@ def plot(xs, ys):
     plt.show()
 
 
-with open('sizeVsFailureRate.json') as data_file:
+with open('./data/sizeVsFailureRate.json') as data_file:
     data = json.load(data_file)
     sizes, failureRate = data
     plot(sizes, failureRate)

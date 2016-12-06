@@ -1,5 +1,5 @@
 const stats = require('simple-statistics');
-const teamSizes = require('./teamSizes');
+const teamSizes = require('./data/teamSizes');
 
 const results = Object.keys(teamSizes).reduce( function(prev, key) {
     const curr = teamSizes[key];
