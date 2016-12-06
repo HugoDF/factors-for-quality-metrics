@@ -114,4 +114,36 @@ def teamSizeToTeamsWithVolumeOfTest(cnx):
     print json.dumps(teamSizeToTeamsWithVolumeOfTest)
 
 
-teamSizeToTeamsWithVolumeOfTest(cnx)
+# teamSizeToTeamsWithVolumeOfTest(cnx)
+
+def getPrCommentsForTeams(cnx, teamSizes):
+    prCommentsForTeams = {}
+    for size in teamSizes:
+        print size
+        query = """
+            SELECT
+                gh_project_name,
+                AVG(gh_num_pr_comments)
+            FROM travistorrent_27_10_2016
+            WHERE gh_team_size = """ + str(size) + """
+            GROUP BY gh_project_name
+        """
+        data = runQuery(cnx, query)
+        prCommentsForTeams[size] = map(lambda x: (x[0], float(x[1])), data)
+
+    return prCommentsForTeams
+
+def teamSizeToTeamsWithPrComments(cnx):
+    query = """ SELECT gh_team_size FROM travistorrent_27_10_2016 GROUP BY gh_team_size"""
+    data = runQuery(cnx, query)
+
+    teamSizes = map(lambda x: x[0], data)
+    prCommentsForTeams = getPrCommentsForTeams(cnx, teamSizes)
+
+    with open('./data/prCommentsForTeams.json', 'w') as outfile:
+        json.dump(prCommentsForTeams, outfile)
+
+    print json.dumps(prCommentsForTeams)
+
+
+teamSizeToTeamsWithPrComments(cnx)
