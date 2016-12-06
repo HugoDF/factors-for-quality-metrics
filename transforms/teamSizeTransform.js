@@ -1,5 +1,5 @@
 const stats = require('simple-statistics');
-const teamSizes = require('./data/buildInfoForTeams');
+const teamSizes = require('../data/buildInfoForTeams');
 
 const results = Object.keys(teamSizes)
     .filter( (size) => teamSizes[size] && teamSizes[size].length > 3)
