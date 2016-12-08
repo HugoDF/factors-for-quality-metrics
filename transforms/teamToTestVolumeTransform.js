@@ -26,5 +26,5 @@ const testRate = Object.values(results);
 
 const correlation = stats.sampleCorrelation(sizes, testRate);
 
-// console.log(correlation);
-console.log(JSON.stringify([ sizes.map(Number), testRate ]));
+console.log(correlation);
+// console.log(JSON.stringify([ sizes.map(Number), testRate ]));

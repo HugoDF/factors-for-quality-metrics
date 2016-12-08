@@ -18,5 +18,5 @@ const failureRate = Object.values(results);
 
 const correlation = stats.sampleCorrelation(sizes, failureRate);
 
-// console.log(correlation);
-console.log(JSON.stringify([ sizes.map(Number), failureRate ]));
+console.log(correlation);
+// console.log(JSON.stringify([ sizes.map(Number), failureRate ]));
