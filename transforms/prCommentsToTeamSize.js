@@ -1,14 +1,21 @@
 const stats = require('simple-statistics');
-const data = require('../data/volumeOfTestForPrComments');
+const data = require('../data/prCommentsForTeams');
 
 const results = Object.keys(data)
+    .filter( (size) => data[size] && data[size].length > 3)
     .reduce( function(prev, key) {
         const curr = data[key];
 
-        const testRate = curr;
+        const computeTestRate = curr.map( ([ name, testRate ]) => testRate );
+
+        const sumTestRates = computeTestRate.reduce( (prev, curr) => (prev + curr), 0);
+
+        const numberOfRates = computeTestRate.length;
+
+        const aggregateTestRate = numberOfRates !== 0 ? (sumTestRates / numberOfRates) : 0;
 
         // if(aggregateFailureRate !== 0) {
-        prev[key] = testRate;
+        prev[key] = aggregateTestRate;
         // }
 
         return prev;

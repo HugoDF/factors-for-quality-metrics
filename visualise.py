@@ -11,7 +11,8 @@ def plot(xs, ys):
 # with open('./data/testVolumeVsFailureRate.json') as data_file:
 # with open('./data/sizeVsFailureRate.json') as data_file:
 # with open('./data/sizeVsPrComments.json') as data_file:
-with open('./data/prCommentsVsFailureRate.json') as data_file:
+# with open('./data/prCommentsVsFailureRate.json') as data_file:
+with open('./data/prCommentsVsTestVolume.json') as data_file:
     data = json.load(data_file)
     sizes, failureRate = data
     plot(sizes, failureRate)

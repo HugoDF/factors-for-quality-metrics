@@ -203,4 +203,38 @@ def prCommentsToBuildFailures(cnx):
 
     print json.dumps(buildResultsForPrComments)
 
-prCommentsToBuildFailures(cnx)
+# prCommentsToBuildFailures(cnx)
+
+def getVolumeOfTestForNumPrComments(cnx, numPrComment):
+    volumeOfTestForNumPrComments = {}
+    for number in numPrComment:
+        print number
+        query = """
+            SELECT
+                AVG(gh_test_cases_per_kloc)
+            FROM travistorrent_27_10_2016
+            WHERE gh_num_pr_comments = """ + str(number) + """
+            GROUP BY gh_num_pr_comments
+        """
+        data = runQuery(cnx, query)
+        if(len(data)>0):
+            volumeOfTestForNumPrComments[number] = data[0][0]
+        else:
+            volumeOfTestForNumPrComments[number] = 0
+
+    return volumeOfTestForNumPrComments
+
+def prCommentsToVolumeOfTest(cnx):
+    query = """ SELECT gh_num_pr_comments FROM travistorrent_27_10_2016 GROUP BY gh_num_pr_comments"""
+    data = runQuery(cnx, query)
+
+    numPrComments = map(lambda x: x[0], data)
+    numPrCommentsToVolumeOfTest = getVolumeOfTestForNumPrComments(cnx, numPrComments)
+
+    with open('./data/volumeOfTestForPrComments.json', 'w') as outfile:
+        json.dump(numPrCommentsToVolumeOfTest, outfile)
+
+    print json.dumps(numPrCommentsToVolumeOfTest)
+
+
+prCommentsToVolumeOfTest(cnx)
