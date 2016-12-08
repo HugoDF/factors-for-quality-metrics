@@ -146,4 +146,61 @@ def teamSizeToTeamsWithPrComments(cnx):
     print json.dumps(prCommentsForTeams)
 
 
-teamSizeToTeamsWithPrComments(cnx)
+# teamSizeToTeamsWithPrComments(cnx)
+
+def getBuildResultsForPrComments(cnx, numPrComments):
+    buildResultsForPrComments = {}
+    for number in numPrComments:
+        print number
+        query = """
+            SELECT
+                gh_num_pr_comments,
+                COUNT(*) as total
+            FROM travistorrent_27_10_2016
+            WHERE gh_num_pr_comments = """ + str(number) + """
+            GROUP BY gh_num_pr_comments
+        """;
+
+        data = runQuery(cnx, query)
+
+        if(len(data) > 0):
+            _, total = data[0]
+        else:
+            total = 0
+
+        query = """
+            SELECT
+                gh_num_pr_comments,
+                COUNT(*) as fail
+            FROM travistorrent_27_10_2016
+            WHERE gh_num_pr_comments = """ + str(number) + """
+                AND tr_status = 'failed'
+            GROUP BY gh_num_pr_comments
+        """;
+
+        data = runQuery(cnx, query)
+
+        if(len(data) > 0):
+            _, fail = data[0]
+        else:
+            fail = 0
+
+        print number, total, fail
+        buildResultsForPrComments[number] = (number, total, fail)
+
+    return buildResultsForPrComments
+
+
+def prCommentsToBuildFailures(cnx):
+    query = """ SELECT gh_num_pr_comments FROM travistorrent_27_10_2016 GROUP BY gh_num_pr_comments"""
+    data = runQuery(cnx, query)
+
+    numPrComments = map(lambda x : x[0], data)
+    buildResultsForPrComments = getBuildResultsForPrComments(cnx, numPrComments)
+
+    with open('./data/buildsForPrComments.json', 'w') as outfile:
+        json.dump(buildResultsForPrComments, outfile)
+
+    print json.dumps(buildResultsForPrComments)
+
+prCommentsToBuildFailures(cnx)
